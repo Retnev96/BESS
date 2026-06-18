@@ -1,0 +1,101 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pricetaker"
+version = "0.1.0"
+description = "Educational BESS price-arbitrage simulator using ENTSO-E day-ahead prices."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+authors = [{ name = "pricetaker contributors" }]
+keywords = ["energy", "battery", "BESS", "arbitrage", "ENTSO-E", "electricity"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Education",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+]
+
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "pulp>=2.7",
+    "pyarrow>=14.0",
+]
+
+[project.optional-dependencies]
+# Live ENTSO-E data fetching (not needed for offline/sample workflows or CI).
+entsoe = ["entsoe-py>=0.6", "python-dotenv>=1.0"]
+# Interactive app and charts.
+viz = ["streamlit>=1.30", "plotly>=5.18"]
+# Developer tooling.
+dev = [
+    "ruff>=0.5",
+    "pytest>=8.0",
+    "mypy>=1.8",
+    "pre-commit>=3.6",
+]
+
+[project.scripts]
+pricetaker = "pricetaker.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/retnev96/bess"
+Repository = "https://github.com/retnev96/bess"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pricetaker"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/pricetaker/data/_sample_data" = "pricetaker/data/_sample_data"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "app"]
+
+[tool.ruff.lint]
+# A pragmatic, teaching-friendly rule set.
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+    "D",   # pydocstyle
+]
+ignore = [
+    "D100",  # missing docstring in public module (covered by file headers)
+    "D104",  # missing docstring in public package
+    "D107",  # missing docstring in __init__ (documented at class level)
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["D"]  # tests are self-documenting
+
+[tool.mypy]
+python_version = "3.11"
+# Lenient is fine for a teaching codebase.
+ignore_missing_imports = true
+warn_unused_ignores = false
+disallow_untyped_defs = false
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+filterwarnings = [
+    # PuLP 4.0 deprecates per-variable construction and PULP_CBC_CMD. The
+    # warnings are third-party internals and flood the output; silence them.
+    "ignore:.*LpVariable.*:DeprecationWarning",
+    "ignore:.*PULP_CBC_CMD.*:DeprecationWarning",
+]

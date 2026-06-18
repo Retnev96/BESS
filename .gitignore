@@ -1,0 +1,29 @@
+# Secrets — never commit a real token
+.env
+
+# Local price cache (parquet keyed by zone/date/resolution)
+.cache/
+*.parquet
+# ...but DO keep the bundled offline sample data
+!src/pricetaker/data/_sample_data/*.parquet
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
