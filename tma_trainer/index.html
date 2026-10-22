@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bearings Only</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=Saira+Stencil+One&family=Share+Tech+Mono&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="console">
+  <header class="topbar">
+    <div class="brand">
+      <span class="stencil">BEARINGS ONLY</span>
+      <span class="brand-sub">TMA STATION 2 &middot; FIRE CONTROL</span>
+    </div>
+    <div class="clock-block">
+      <span class="lbl">EXERCISE TIME</span>
+      <b id="clock" class="data big">00:00:00</b>
+    </div>
+    <div class="tc" id="tcGroup" role="group" aria-label="Time compression">
+      <span class="lbl">TIME COMP</span>
+      <button id="btnPause" class="key" title="Pause (Space)">II</button>
+      <button class="key tcb" data-tc="1">1&times;</button>
+      <button class="key tcb" data-tc="4">4&times;</button>
+      <button class="key tcb" data-tc="8">8&times;</button>
+      <button class="key tcb" data-tc="16">16&times;</button>
+      <button class="key tcb" data-tc="32">32&times;</button>
+    </div>
+    <div class="leds">
+      <span class="led" id="ledSonar"><i></i>SONAR</span>
+      <span class="led" id="ledFcs"><i></i>FCS</span>
+      <span class="led" id="ledWpn"><i></i>WEAPONS</span>
+      <span class="score data" id="score">HITS 0 / SHOTS 0</span>
+    </div>
+    <div class="sys">
+      <button id="btnSound" class="key toggle on" title="Sound">SOUND</button>
+      <button id="btnVoice" class="key toggle on" title="Spoken callouts">VOICE</button>
+      <button id="btnTruth" class="key toggle" title="Show true contact positions (T)">TRUTH</button>
+      <button id="btnHelp" class="key" title="Help (H)">HELP</button>
+      <button id="btnEnd" class="key warn" title="End the exercise and see the debrief">END</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="col-left">
+      <div class="panel ownship">
+        <div class="ph"><h2>OWN SHIP</h2><span class="ph-note" id="ownState">STEADY</span></div>
+        <div class="own-body">
+          <canvas id="dial" aria-label="Heading dial. Click to order a course."></canvas>
+          <div class="own-read">
+            <div class="ro"><span>HDG</span><b id="roHdg" class="data">000</b></div>
+            <div class="ro amber"><span>ORD CSE</span><b id="roOrdHdg" class="data">000</b></div>
+            <div class="ro"><span>SPEED</span><b id="roSpd" class="data">6.0</b></div>
+            <div class="ro amber"><span>ORD SPD</span><b id="roOrdSpd" class="data">6</b></div>
+            <div class="ro"><span>DEPTH</span><b class="data">150 FT</b></div>
+            <div class="ro"><span>SELF NOISE</span><b id="roNoise" class="data">LOW</b></div>
+          </div>
+        </div>
+        <div class="ctl-row" role="group" aria-label="Order course">
+          <span class="lbl">COURSE</span>
+          <button class="key" data-crs="-10">&laquo;10</button>
+          <button class="key" data-crs="-1">&lsaquo;1</button>
+          <input id="inCrs" class="data" type="text" inputmode="numeric" maxlength="3" value="000" aria-label="Ordered course">
+          <button class="key" data-crs="1">1&rsaquo;</button>
+          <button class="key" data-crs="10">10&raquo;</button>
+        </div>
+        <div class="ctl-row bells" role="group" aria-label="Order speed">
+          <span class="lbl">BELLS</span>
+          <button class="key" data-spd="0">STOP</button>
+          <button class="key" data-spd="5">1/3</button>
+          <button class="key" data-spd="10">2/3</button>
+          <button class="key" data-spd="15">STD</button>
+          <button class="key" data-spd="20">FULL</button>
+          <button class="key" data-spd="28">FLANK</button>
+        </div>
+      </div>
+
+      <div class="panel tracks">
+        <div class="ph"><h2>CONTACTS</h2><span class="ph-note">TAB cycles &middot; CTRL+CLICK to pick for merge</span></div>
+        <div id="trackList" class="track-list"></div>
+        <div class="ops">
+          <button id="btnMerge" class="key" title="Merge the checked tracks (M)">MERGE</button>
+          <button id="btnSplit" class="key" title="Split the selected track at a time (S)">SPLIT</button>
+          <button id="btnDrop" class="key" title="Drop the selected track (Delete)">DROP</button>
+          <button id="btnListen" class="key toggle" title="Listen to the selected contact (L)">LISTEN</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="geo-wrap panel">
+      <div class="geo-toolbar">
+        <div class="tool-group" role="group" aria-label="Plot tool">
+          <button class="key tool" data-mode="select" title="Select and pan (Q)">SELECT</button>
+          <button class="key tool" data-mode="ruler" title="Lay the TMA ruler (R)">RULER</button>
+          <button class="key tool" data-mode="split" title="Split the selected track at a bearing line (S)">SPLIT</button>
+        </div>
+        <div class="tool-group" role="group" aria-label="Bearing line interval">
+          <span class="lbl">LINES</span>
+          <button class="key liv" data-iv="30">30s</button>
+          <button class="key liv" data-iv="60">1m</button>
+          <button class="key liv" data-iv="120">2m</button>
+        </div>
+        <div class="tool-group">
+          <button id="btnAll" class="key toggle on" title="Show every track's bearing lines">ALL TRACKS</button>
+          <button id="btnFollow" class="key toggle on" title="Keep own ship centred (C)">FOLLOW</button>
+          <button id="btnZoomOut" class="key" title="Zoom out (-)">&minus;</button>
+          <button id="btnZoomIn" class="key" title="Zoom in (+)">+</button>
+        </div>
+      </div>
+      <canvas id="geo" aria-label="Geographic plot"></canvas>
+      <div id="toast" class="toast" hidden></div>
+    </section>
+
+    <section class="col-right">
+      <div class="panel wf">
+        <div class="ph"><h2>BROADBAND WATERFALL</h2><span class="ph-note">TRUE BEARING &middot; NEWEST AT TOP</span></div>
+        <canvas id="wf" aria-label="Bearing time waterfall"></canvas>
+      </div>
+      <div class="panel dots">
+        <div class="ph"><h2>DOT STACK</h2><span class="ph-note" id="dotNote">RESIDUALS VS TIME</span>
+          <span class="ph-tools"><button class="key mini dsc" data-ds="2">&plusmn;2&deg;</button><button class="key mini dsc" data-ds="5">&plusmn;5&deg;</button><button class="key mini dsc" data-ds="10">&plusmn;10&deg;</button></span>
+        </div>
+        <canvas id="dots" aria-label="Dot stack"></canvas>
+      </div>
+    </section>
+
+    <section class="bottom">
+      <div class="panel sol">
+        <div class="ph"><h2>SOLUTION</h2><span class="ph-note" id="solTrack">NO TRACK</span></div>
+        <div class="sol-grid">
+          <div class="ro big"><span>COURSE</span><b id="soCrs" class="data">---</b></div>
+          <div class="ro big"><span>SPEED KT</span><b id="soSpd" class="data">--.-</b></div>
+          <div class="ro big"><span>RANGE KYD</span><b id="soRng" class="data">--.-</b></div>
+          <div class="ro"><span>SOL BRG</span><b id="soBrg" class="data">---</b></div>
+          <div class="ro"><span>BRG RATE</span><b id="soBr" class="data">--</b></div>
+          <div class="ro"><span>RMS ERR</span><b id="soRms" class="data">--</b></div>
+        </div>
+        <div class="adj">
+          <div class="adj-g"><span class="lbl">CSE</span><button class="key mini" data-adj="crs" data-v="-2">&minus;</button><button class="key mini" data-adj="crs" data-v="2">+</button></div>
+          <div class="adj-g"><span class="lbl">SPD</span><button class="key mini" data-adj="spd" data-v="-0.5">&minus;</button><button class="key mini" data-adj="spd" data-v="0.5">+</button></div>
+          <div class="adj-g"><span class="lbl">RNG</span><button class="key mini" data-adj="rng" data-v="0.96">&minus;</button><button class="key mini" data-adj="rng" data-v="1.04">+</button></div>
+          <button id="btnClearSol" class="key mini">CLEAR</button>
+        </div>
+        <div class="obs-row">
+          <span class="chip" id="chipObs">OBSERVABILITY --</span>
+          <span class="chip" id="chipFit">FIT --</span>
+        </div>
+        <p class="advisor" id="advisor">Waiting for contacts.</p>
+        <p class="demon data" id="demon"></p>
+      </div>
+
+      <div class="panel wpn">
+        <div class="ph"><h2>WEAPONS</h2><span class="ph-note" id="wpnReserve">RELOADS 4</span></div>
+        <div class="tubes" id="tubes"></div>
+        <div class="presets">
+          <div class="ro"><span>TARGET</span><b id="pzTgt" class="data">--</b></div>
+          <div class="ro"><span>GYRO</span><b id="pzGyro" class="data">---</b></div>
+          <div class="ro"><span>INTERCEPT</span><b id="pzInt" class="data">--</b></div>
+          <div class="ro"><span>RUN TIME</span><b id="pzTti" class="data">--</b></div>
+          <div class="ro"><span>ENABLE AT</span><b id="pzEn" class="data">--</b></div>
+        </div>
+        <div class="ctl-row">
+          <label class="lbl" for="enOff">ENABLE BEFORE INTERCEPT</label>
+          <input id="enOff" type="range" min="1000" max="4500" step="250" value="2500">
+          <b id="enOffV" class="data">2.5 KYD</b>
+        </div>
+        <button id="btnFire" class="fire" title="Fire (F)">FIRE</button>
+        <div id="weapons" class="weapons"></div>
+      </div>
+
+      <div class="panel logp">
+        <div class="ph"><h2>STATION LOG</h2><span class="ph-note">CONN &middot; SONAR &middot; FIRE CONTROL &middot; WEAPONS</span></div>
+        <ol id="log" class="log"></ol>
+      </div>
+    </section>
+  </main>
+  <div class="crt" aria-hidden="true"></div>
+</div>
+
+<!-- Start screen -->
+<div id="start" class="overlay start">
+  <canvas id="startBg" aria-hidden="true"></canvas>
+  <div class="start-card">
+    <p class="eyebrow">SUBMARINE FIRE CONTROL TRAINER</p>
+    <h1 class="stencil title">BEARINGS ONLY</h1>
+    <p class="lede">Your sonar gives you bearings and nothing else. Work out where each contact is, which way it is heading and how fast, then put a torpedo on it.</p>
+    <div class="setup">
+      <div class="setup-row" role="group" aria-label="Difficulty">
+        <span class="lbl">DIFFICULTY</span>
+        <button class="key choice" data-diff="easy">EASY</button>
+        <button class="key choice" data-diff="normal">NORMAL</button>
+        <button class="key choice" data-diff="hard">HARD</button>
+      </div>
+      <p class="diff-note" id="diffNote"></p>
+      <div class="setup-row" role="group" aria-label="Number of contacts">
+        <span class="lbl">CONTACTS</span>
+        <button class="key choice" data-n="1">1</button>
+        <button class="key choice" data-n="2">2</button>
+        <button class="key choice" data-n="3">3</button>
+        <button class="key choice" data-n="4">4</button>
+      </div>
+      <div class="setup-row">
+        <span class="lbl">AUDIO</span>
+        <button id="stSound" class="key toggle on">SOUND</button>
+        <button id="stVoice" class="key toggle on">VOICE CALLOUTS</button>
+      </div>
+    </div>
+    <button id="btnBegin" class="begin">BEGIN WATCH</button>
+    <div class="primer">
+      <div>
+        <h3>The picture</h3>
+        <p>Bearing lines fan out from where your boat was when each bearing came in. The auto-tracker names contacts S1, S2&hellip; It will drop and swap tracks. Merge and split them so each track is one ship.</p>
+      </div>
+      <div>
+        <h3>The ruler</h3>
+        <p>Press <kbd>R</kbd> and drag from an old bearing line to a recent one. The ruler is the target's track. When every tick sits on its line and the dot stack stands straight, you have course, speed and range.</p>
+      </div>
+      <div>
+        <h3>The shot</h3>
+        <p>One leg cannot fix range. Turn 40 to 90 degrees, let new bearings build, refine the ruler, then press <kbd>F</kbd>. The torpedo runs out on your solution and its seeker does the rest.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Help -->
+<div id="help" class="overlay help" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><h2 class="stencil">STATION CARD</h2><button class="key" data-close="help">CLOSE</button></div>
+    <div class="help-grid">
+      <div>
+        <h3>Keys</h3>
+        <table class="keys">
+          <tr><td><kbd>Space</kbd></td><td>Pause / resume</td></tr>
+          <tr><td><kbd>1</kbd>&ndash;<kbd>5</kbd></td><td>Time compression 1&times;, 4&times;, 8&times;, 16&times;, 32&times;</td></tr>
+          <tr><td><kbd>A</kbd> <kbd>D</kbd></td><td>Order course 10&deg; left / right (Shift: 1&deg;)</td></tr>
+          <tr><td><kbd>W</kbd> <kbd>X</kbd></td><td>Order speed up / down 1 kt</td></tr>
+          <tr><td><kbd>Tab</kbd></td><td>Next track</td></tr>
+          <tr><td><kbd>Q</kbd> <kbd>R</kbd> <kbd>S</kbd></td><td>Select, Ruler, Split tool</td></tr>
+          <tr><td><kbd>M</kbd></td><td>Merge checked tracks</td></tr>
+          <tr><td><kbd>Del</kbd></td><td>Drop selected track</td></tr>
+          <tr><td><kbd>[</kbd> <kbd>]</kbd></td><td>Solution course &minus;/+ 2&deg;</td></tr>
+          <tr><td><kbd>;</kbd> <kbd>'</kbd></td><td>Solution speed &minus;/+ 0.5 kt</td></tr>
+          <tr><td><kbd>,</kbd> <kbd>.</kbd></td><td>Solution range in / out 4%</td></tr>
+          <tr><td><kbd>F</kbd></td><td>Fire on the selected track</td></tr>
+          <tr><td><kbd>U</kbd></td><td>Update the newest wire-guided weapon</td></tr>
+          <tr><td><kbd>L</kbd></td><td>Listen to the selected contact</td></tr>
+          <tr><td><kbd>C</kbd></td><td>Follow own ship</td></tr>
+          <tr><td><kbd>T</kbd></td><td>Show truth (noted in your grade)</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>Back to the select tool</td></tr>
+        </table>
+        <h3>Mouse on the plot</h3>
+        <p>Wheel zooms. Right-drag or drag empty water pans. Click a bearing line to select its track. Drag a ruler end to slide it along the bearing lines; hold <kbd>Shift</kbd> to place it freely. Drag the middle of the ruler to shift the whole thing.</p>
+      </div>
+      <div>
+        <h3>How bearings-only TMA works</h3>
+        <p>A passive sonar hears a bearing, never a range. A ship on a steady course and speed crosses each successive bearing line at an even spacing in time. Lay a straight ruler across the lines so its tick marks, one per line, land on the lines they belong to.</p>
+        <p>On a single own-ship leg there is a whole family of rulers that fit: near and slow, or far and fast. Changing course breaks the tie, because only the true range keeps fitting after your boat turns. That is why the OBSERVABILITY chip asks for a second leg.</p>
+        <p>The dot stack plots each bearing's error against your solution over time. A vertical stack centred on zero means a good fit. Dots leaning one way mean the course or speed is off; a bend at one moment means the contact maneuvered or the tracker swapped ships there. Split the track at that moment.</p>
+        <p>Watch your own noise. Above about 12 kt your bearings get ragged and quiet contacts fade. Contacts in the baffles, 30&deg; either side of dead astern, are lost entirely. Turning briefly smears bearings too.</p>
+        <p>DEMON gives blade count and shaft RPM. Divide RPM by the class's turns per knot (TPK) for a speed check on your ruler.</p>
+        <p>The torpedo runs at 45 kt to the enable point, then snakes with its seeker on. It acquires anything loud inside about 40&deg; of its nose and 1.5 to 3.5 kyd. Warships and submarines turn away and run when they hear it. While the wire holds (own speed 20 kt or less) you can update its presets from a better solution.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Debrief -->
+<div id="debrief" class="overlay debrief" hidden>
+  <div class="sheet">
+    <div class="sheet-head"><h2 class="stencil">EXERCISE DEBRIEF</h2><span class="data" id="dbTime"></span></div>
+    <div id="dbBody"></div>
+    <div class="sheet-foot">
+      <button class="key" data-close="debrief">REVIEW THE PLOT</button>
+      <button id="btnNew" class="begin small">NEW EXERCISE</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/util.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/geoplot.js"></script>
+<script src="js/displays.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
